@@ -312,23 +312,36 @@ export default function App() {
   <p>POSE LIKE YOUR IDOL ♡</p>
   <small>Placeholder guide · Replace later</small>
 </div>
+
 <div className="camera-frame">
-            <video
-              ref={videoRef}
-              className="camera-video"
-              autoPlay
-              muted
-              playsInline
-            />
-<div className="pose-overlay">
-  <div className="pose-overlay-label">
-    {POSES[currentFrame].guideLabel}
+  <video
+    ref={videoRef}
+    className="camera-video"
+    autoPlay
+    muted
+    playsInline
+  />
+
+  <div className="idol-layout">
+    <div className="idol-placeholder">
+      <span className="idol-number">
+        {String(currentFrame + 1).padStart(2, "0")}
+      </span>
+      <div className="idol-silhouette" aria-hidden="true">
+        ♡
+      </div>
+      <span className="idol-caption">IDOL POSE</span>
+    </div>
+
+    <div className="user-camera-slot">
+      <span>YOUR PHOTO</span>
+    </div>
   </div>
-  <div className="pose-overlay-placeholder">
-    {POSES[currentFrame].guide}
-  </div>
-  <p>POSE LIKE YOUR IDOL ♡</p>
+
+  {/* Keep your existing camera loading, countdown,
+      and captured-label code here! */}
 </div>
+
 
 
             {!cameraReady && !error && (
