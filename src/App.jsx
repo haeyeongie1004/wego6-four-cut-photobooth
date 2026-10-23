@@ -132,12 +132,15 @@ ctx.drawImage(
 
     // Load the frame PNG for the current photo.
     const frame = new Image();
-    frame.src = `/frame-${currentFrame + 1}.png`;
 
-    await new Promise((resolve, reject) => {
-      frame.onload = resolve;
-      frame.onerror = reject;
-    });
+await new Promise((resolve, reject) => {
+  frame.onload = resolve;
+  frame.onerror = () => reject(
+    new Error(`Failed to load frame-${currentFrame + 1}.png`)
+  );
+
+  frame.src = `/frame-${currentFrame + 1}.png`;
+});
 
     // Overlay the transparent frame on top of the webcam photo.
     ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
