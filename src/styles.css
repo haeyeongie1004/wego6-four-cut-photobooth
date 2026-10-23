@@ -394,3 +394,78 @@ footer {
     display: none;
   }
 }
+
+.pose-guide {
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto 18px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #ddd3f5;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #f7f1ff, #edf7ff);
+  color: #75669e;
+  box-sizing: border-box;
+}
+
+.pose-guide-label {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #e7defa;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.pose-guide-art {
+  display: grid;
+  place-items: center;
+  min-height: 145px;
+  margin: 10px 0;
+  border: 1px dashed #c5b6e8;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.65);
+  font-size: 54px;
+}
+
+.pose-guide p {
+  margin: 8px 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.pose-guide small {
+  color: #9488ae;
+  font-size: 11px;
+}
+
+@media (min-width: 900px) {
+  .camera-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    column-gap: 22px;
+    align-items: start;
+  }
+
+  .camera-panel .section-heading,
+  .camera-panel .error-message,
+  .camera-panel .controls,
+  .camera-panel .hint {
+    grid-column: 1 / -1;
+  }
+
+  .camera-panel .pose-guide {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: 220px;
+    margin: 0;
+  }
+
+  .camera-panel .camera-frame {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
