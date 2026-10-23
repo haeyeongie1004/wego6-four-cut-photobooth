@@ -111,7 +111,23 @@ async function capturePhoto() {
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+const scale = Math.min(
+  canvas.width / frame.width,
+  canvas.height / frame.height
+);
+
+const frameWidth = frame.width * scale;
+const frameHeight = frame.height * scale;
+
+ctx.drawImage(
+  frame,
+  (canvas.width - frameWidth) / 2,
+  (canvas.height - frameHeight) / 2,
+  frameWidth,
+  frameHeight
+);
+
     ctx.restore();
 
     // Load the frame PNG for the current photo.
