@@ -88,6 +88,7 @@ export default function App() {
   }, []);
 
   
+
 async function capturePhoto() {
   const video = videoRef.current;
 
@@ -102,6 +103,7 @@ async function capturePhoto() {
     canvas.height = video.videoHeight || 480;
 
     const ctx = canvas.getContext("2d");
+
     if (!ctx) {
       setError("Couldn't capture the photo. Please try again.");
       return null;
@@ -111,46 +113,46 @@ async function capturePhoto() {
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    
-const scale = Math.min(
-  canvas.width / frame.width,
-  canvas.height / frame.height
-);
-
-const frameWidth = frame.width * scale;
-const frameHeight = frame.height * scale;
-
-ctx.drawImage(
-  frame,
-  (canvas.width - frameWidth) / 2,
-  (canvas.height - frameHeight) / 2,
-  frameWidth,
-  frameHeight
-);
-
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     ctx.restore();
 
-    // Load the frame PNG for the current photo.
+    // Load the frame PNG before using its dimensions.
     const frame = new Image();
 
-await new Promise((resolve, reject) => {
-  frame.onload = resolve;
-  frame.onerror = () => reject(
-    new Error(`Failed to load frame-${currentFrame + 1}.png`)
-  );
+    await new Promise((resolve, reject) => {
+      frame.onload = resolve;
+      frame.onerror = () =>
+        reject(new Error("The frame PNG could not be loaded."));
 
-  frame.src = `/frame-${currentFrame + 1}.png`;
-});
+      frame.src = `/frame-${currentFrame + 1}.png`;
+    });
 
-    // Overlay the transparent frame on top of the webcam photo.
-    ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+    // Fit the frame without stretching it.
+    const scale = Math.min(
+      canvas.width / frame.width,
+      canvas.height / frame.height
+    );
+
+    const frameWidth = frame.width * scale;
+    const frameHeight = frame.height * scale;
+
+    // Overlay the transparent frame without mirroring it.
+    ctx.drawImage(
+      frame,
+      (canvas.width - frameWidth) / 2,
+      (canvas.height - frameHeight) / 2,
+      frameWidth,
+      frameHeight
+    );
 
     return canvas.toDataURL("image/jpeg", 0.92);
   } catch (error) {
-  console.error("Frame capture error:", error);
-  setError(`Couldn't add the frame: ${error.message || "Unknown error"}`);
-  return null;
-}
+    console.error("Frame capture error:", error);
+    setError(
+      `Couldn't add the frame: ${error.message || "Unknown error"}`
+    );
+    return null;
+  }
 }
 
   async function startCountdown() {
