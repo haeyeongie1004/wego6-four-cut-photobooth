@@ -320,6 +320,16 @@ export default function App() {
               muted
               playsInline
             />
+<div className="pose-overlay">
+  <div className="pose-overlay-label">
+    {POSES[currentFrame].guideLabel}
+  </div>
+  <div className="pose-overlay-placeholder">
+    {POSES[currentFrame].guide}
+  </div>
+  <p>POSE LIKE YOUR IDOL ♡</p>
+</div>
+
 
             {!cameraReady && !error && (
               <div className="camera-overlay">
