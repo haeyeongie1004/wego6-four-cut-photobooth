@@ -142,7 +142,7 @@ async function capturePhoto() {
     setCountdown(seconds);
 
     clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
+    timerRef.current = setInterval(async () => {
       seconds -= 1;
 
       if (seconds > 0) {
