@@ -87,26 +87,53 @@ export default function App() {
     };
   }, []);
 
-  function capturePhoto() {
-    const video = videoRef.current;
-    if (!video || video.readyState < 2) {
-      setError("The camera is not ready yet. Please try again.");
-      return null;
-    }
+  
+async function capturePhoto() {
+  const video = videoRef.current;
 
+  if (!video || video.readyState < 2) {
+    setError("The camera is not ready yet. Please try again.");
+    return null;
+  }
+
+  try {
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
 
     const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      setError("Couldn't capture the photo. Please try again.");
+      return null;
+    }
+
+    // Draw the mirrored webcam photo first.
+    ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    // Load the frame PNG for the current photo.
+    const frame = new Image();
+    frame.src = `/frame-${currentFrame + 1}.png`;
+
+    await new Promise((resolve, reject) => {
+      frame.onload = resolve;
+      frame.onerror = reject;
+    });
+
+    // Overlay the transparent frame on top of the webcam photo.
+    ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
 
     return canvas.toDataURL("image/jpeg", 0.92);
+  } catch (error) {
+    setError("Couldn't add the frame to your photo. Check that your frame PNG files are in the public folder.");
+    return null;
   }
+}
 
-  function startCountdown() {
+  async function startCountdown() {
     if (!cameraReady || counting || finished) return;
 
     setError("");
@@ -125,11 +152,12 @@ export default function App() {
 
       clearInterval(timerRef.current);
 
-      const photo = capturePhoto();
+      const photoPromise = capturePhoto();
       setCountdown(null);
       setCounting(false);
 
-      if (!photo) return;
+      const photo = await photoPromise;
+if (!photo) return;
 
       setPhotos((previous) => {
         const updated = [...previous];
