@@ -323,21 +323,13 @@ export default function App() {
     playsInline
   />
 
-  <div className="idol-layout">
-    <div className="idol-placeholder">
-      <span className="idol-number">
-        {String(currentFrame + 1).padStart(2, "0")}
-      </span>
-      <div className="idol-silhouette" aria-hidden="true">
-        ♡
-      </div>
-      <span className="idol-caption">IDOL POSE</span>
-    </div>
-
-    <div className="user-camera-slot">
-      <span>YOUR PHOTO</span>
-    </div>
-  </div>
+<img
+  className="frame-overlay"
+  src={`/frame-${currentFrame + 1}.png`}
+  alt=""
+  aria-hidden="true"
+  draggable="false"
+/>
 
   {!cameraReady && !error && (
     <div className="camera-overlay">
