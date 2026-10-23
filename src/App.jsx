@@ -144,9 +144,10 @@ ctx.drawImage(
 
     return canvas.toDataURL("image/jpeg", 0.92);
   } catch (error) {
-    setError("Couldn't add the frame to your photo. Check that your frame PNG files are in the public folder.");
-    return null;
-  }
+  console.error("Frame capture error:", error);
+  setError(`Couldn't add the frame: ${error.message || "Unknown error"}`);
+  return null;
+}
 }
 
   async function startCountdown() {
