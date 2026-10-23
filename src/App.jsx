@@ -10,12 +10,34 @@ import {
   Check,
 } from "lucide-react";
 
+
 const POSES = [
-  { title: "The Signature Pose", tip: "Show us your iconic pose! ♡" },
-  { title: "Peace & Love", tip: "Two fingers, double the cuteness ✌️" },
-  { title: "Cheeky Moment", tip: "Hands on cheeks, give us your best smile!" },
-  { title: "Bestie Finale", tip: "End with your favourite matching pose!" },
+  {
+    title: "The Signature Pose",
+    tip: "Copy the pose from your guide! ♡",
+    guide: "✌️",
+    guideLabel: "POSE 01",
+  },
+  {
+    title: "Peace & Love",
+    tip: "Make a peace sign and smile! ✌️",
+    guide: "✌️ 💗",
+    guideLabel: "POSE 02",
+  },
+  {
+    title: "Cheeky Moment",
+    tip: "Try a cute cheek pose! ♡",
+    guide: "🥹 🫶",
+    guideLabel: "POSE 03",
+  },
+  {
+    title: "Bestie Finale",
+    tip: "Finish with your favourite pose!",
+    guide: "🫰 💕",
+    guideLabel: "POSE 04",
+  },
 ];
+
 
 export default function App() {
   const videoRef = useRef(null);
@@ -89,7 +111,7 @@ export default function App() {
 
     setError("");
     setCounting(true);
-    let seconds = 5;
+    let seconds = 3;
     setCountdown(seconds);
 
     clearInterval(timerRef.current);
@@ -279,7 +301,18 @@ export default function App() {
             </p>
           </div>
 
-          <div className="camera-frame">
+          
+<div className="pose-guide">
+  <span className="pose-guide-label">
+    {POSES[currentFrame].guideLabel}
+  </span>
+  <div className="pose-guide-art">
+    {POSES[currentFrame].guide}
+  </div>
+  <p>POSE LIKE YOUR IDOL ♡</p>
+  <small>Placeholder guide · Replace later</small>
+</div>
+<div className="camera-frame">
             <video
               ref={videoRef}
               className="camera-video"
@@ -316,7 +349,7 @@ export default function App() {
                 disabled={!cameraReady || counting}
               >
                 <Camera size={19} />
-                {counting ? `Smile in ${countdown ?? 0}...` : "Ready? Start 5s countdown"}
+                {counting ? `Smile in ${countdown ?? 0}...` : "Ready? Start 3s countdown"}
               </button>
             )}
 
