@@ -99,9 +99,9 @@ async function capturePhoto() {
 
   try {
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-
+    // Use a consistent horizontal 4:3 photo format.
+canvas.width = 1200;
+canvas.height = 900;
     const ctx = canvas.getContext("2d");
 
     if (!ctx) {
@@ -109,178 +109,37 @@ async function capturePhoto() {
       return null;
     }
 
-    // Draw the mirrored webcam photo first.
+    
+    // Crop the camera image to a horizontal 16:9 shape.
+    const sourceWidth = video.videoWidth;
+    const sourceHeight = video.videoHeight;
+    const targetRatio = canvas.width / canvas.height;
+    const sourceRatio = sourceWidth / sourceHeight;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = sourceWidth;
+    let sh = sourceHeight;
+
+    if (sourceRatio > targetRatio) {
+      sw = sourceHeight * targetRatio;
+      sx = (sourceWidth - sw) / 2;
+    } else {
+      sh = sourceWidth / targetRatio;
+      sy = (sourceHeight - sh) / 2;
+    }
+
+    // Mirror the cropped webcam image.
     ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      video,
+      sx, sy, sw, sh,
+      0, 0, canvas.width, canvas.height
+    );
     ctx.restore();
 
-    // Load the frame PNG before using its dimensions.
-    const frame = new Image();
-
-    await new Promise((resolve, reject) => {
-      frame.onload = resolve;
-      frame.onerror = () =>
-        reject(new Error("The frame PNG could not be loaded."));
-
-      frame.src = `/frame-${currentFrame + 1}.png`;
-    });
-
-    // Fit the frame without stretching it.
-    const scale = Math.min(
-      canvas.width / frame.width,
-      canvas.height / frame.height
-    );
-
-    const frameWidth = frame.width * scale;
-    const frameHeight = frame.height * scale;
-
-    // Overlay the transparent frame without mirroring it.
-    ctx.drawImage(
-      frame,
-      (canvas.width - frameWidth) / 2,
-      (canvas.height - frameHeight) / 2,
-      frameWidth,
-      frameHeight
-    );
-
-    return canvas.toDataURL("image/jpeg", 0.92);
-  } catch (error) {
-    console.error("Frame capture error:", error);
-    setError(
-      `Couldn't add the frame: ${error.message || "Unknown error"}`
-    );
-    return null;
-  }
-}
-
-  async function startCountdown() {
-    if (!cameraReady || counting || finished) return;
-
-    setError("");
-    setCounting(true);
-    let seconds = 3;
-    setCountdown(seconds);
-
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(async () => {
-      seconds -= 1;
-
-      if (seconds > 0) {
-        setCountdown(seconds);
-        return;
-      }
-
-      clearInterval(timerRef.current);
-
-      const photoPromise = capturePhoto();
-      setCountdown(null);
-      setCounting(false);
-
-      const photo = await photoPromise;
-if (!photo) return;
-
-      setPhotos((previous) => {
-        const updated = [...previous];
-        updated[currentFrame] = photo;
-        return updated;
-      });
-    }, 1000);
-  }
-
-  function retakeFrame() {
-    clearInterval(timerRef.current);
-    setCountdown(null);
-    setCounting(false);
-    setFinished(false);
-    setPhotos((previous) => {
-      const updated = [...previous];
-      updated[currentFrame] = null;
-      return updated;
-    });
-  }
-
-  function goToNextFrame() {
-    if (!photos[currentFrame]) return;
-
-    if (currentFrame === 3) {
-      setFinished(true);
-      return;
-    }
-
-    setCurrentFrame((previous) => previous + 1);
-  }
-
-  function startOver() {
-    clearInterval(timerRef.current);
-    setPhotos([null, null, null, null]);
-    setCurrentFrame(0);
-    setCountdown(null);
-    setCounting(false);
-    setFinished(false);
-    setError("");
-  }
-
-  async function downloadStrip() {
-    if (photos.some((photo) => !photo)) return;
-
-    try {
-      const images = await Promise.all(
-        photos.map(
-          (src) =>
-            new Promise((resolve, reject) => {
-              const img = new Image();
-              img.onload = () => resolve(img);
-              img.onerror = reject;
-              img.src = src;
-            })
-        )
-      );
-
-      const width = 600;
-      const padding = 28;
-      const photoWidth = width - padding * 2;
-      const photoHeight = 340;
-      const gap = 16;
-      const header = 130;
-      const footer = 100;
-      const height =
-        header + 4 * photoHeight + 3 * gap + footer;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, "#f1edff");
-      gradient.addColorStop(1, "#e6f4ff");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.fillStyle = "#75669e";
-      ctx.textAlign = "center";
-      ctx.font = "bold 36px sans-serif";
-      ctx.fillText("WE GO-6 ♡", width / 2, 58);
-      ctx.font = "18px sans-serif";
-      ctx.fillText("little moments, lovely memories", width / 2, 94);
-
-      images.forEach((img, index) => {
-        const y = header + index * (photoHeight + gap);
-        const scale = Math.max(
-          photoWidth / img.width,
-          photoHeight / img.height
-        );
-        const cropWidth = photoWidth / scale;
-        const cropHeight = photoHeight / scale;
-
-        ctx.save();
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = "rgba(100, 90, 140, 0.18)";
-        ctx.shadowBlur = 12;
-        ctx.fillRect(padding, y, photoWidth, photoHeight);
-        ctx.restore();
 
         ctx.save();
         ctx.beginPath();
