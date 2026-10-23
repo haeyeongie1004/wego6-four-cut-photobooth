@@ -6,19 +6,29 @@ import {
   Download,
   Sparkles,
   Heart,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 
-const PHOTO_COUNT = 4;
+const POSES = [
+  { title: "The Signature Pose", tip: "Show us your iconic pose! ♡" },
+  { title: "Peace & Love", tip: "Two fingers, double the cuteness ✌️" },
+  { title: "Cheeky Moment", tip: "Hands on cheeks, give us your best smile!" },
+  { title: "Bestie Finale", tip: "End with your favourite matching pose!" },
+];
 
 export default function App() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const timerRef = useRef(null);
+
   const [cameraReady, setCameraReady] = useState(false);
   const [error, setError] = useState("");
+  const [photos, setPhotos] = useState([null, null, null, null]);
+  const [currentFrame, setCurrentFrame] = useState(0);
   const [countdown, setCountdown] = useState(null);
-  const [photos, setPhotos] = useState([]);
-  const [capturing, setCapturing] = useState(false);
+  const [counting, setCounting] = useState(false);
+  const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -41,7 +51,7 @@ export default function App() {
         setCameraReady(true);
       } catch {
         setError(
-          "Camera access was blocked. Allow camera permission in your browser, then refresh this page."
+          "Camera access is needed. Please allow camera permission and refresh."
         );
       }
     }
@@ -55,33 +65,34 @@ export default function App() {
     };
   }, []);
 
-  function takePhoto() {
+  function capturePhoto() {
     const video = videoRef.current;
-    if (!video || video.readyState < 2) return null;
+    if (!video || video.readyState < 2) {
+      setError("The camera is not ready yet. Please try again.");
+      return null;
+    }
 
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth || 640;
     canvas.height = video.videoHeight || 480;
 
-    const context = canvas.getContext("2d");
-    context.translate(canvas.width, 0);
-    context.scale(-1, 1);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d");
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     return canvas.toDataURL("image/jpeg", 0.92);
   }
 
-  function startSession() {
-    if (!cameraReady || capturing) return;
+  function startCountdown() {
+    if (!cameraReady || counting || finished) return;
 
-    setPhotos([]);
-    setCapturing(true);
-    let shot = 0;
-    let seconds = 3;
-
+    setError("");
+    setCounting(true);
+    let seconds = 5;
     setCountdown(seconds);
-    clearInterval(timerRef.current);
 
+    clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       seconds -= 1;
 
@@ -90,46 +101,71 @@ export default function App() {
         return;
       }
 
-      const photo = takePhoto();
+      clearInterval(timerRef.current);
 
-      if (photo) {
-        setPhotos((previous) => [...previous, photo]);
-        shot += 1;
-      }
+      const photo = capturePhoto();
+      setCountdown(null);
+      setCounting(false);
 
-      if (shot >= PHOTO_COUNT) {
-        clearInterval(timerRef.current);
-        setCountdown(null);
-        setCapturing(false);
-      } else {
-        seconds = 3;
-        setCountdown(seconds);
-      }
+      if (!photo) return;
+
+      setPhotos((previous) => {
+        const updated = [...previous];
+        updated[currentFrame] = photo;
+        return updated;
+      });
     }, 1000);
   }
 
-  function cancelSession() {
+  function retakeFrame() {
     clearInterval(timerRef.current);
     setCountdown(null);
-    setCapturing(false);
-    setPhotos([]);
+    setCounting(false);
+    setFinished(false);
+    setPhotos((previous) => {
+      const updated = [...previous];
+      updated[currentFrame] = null;
+      return updated;
+    });
   }
 
-  function downloadStrip() {
-    if (photos.length !== PHOTO_COUNT) return;
+  function goToNextFrame() {
+    if (!photos[currentFrame]) return;
 
-    const images = photos.map(
-      (src) =>
-        new Promise((resolve, reject) => {
-          const image = new Image();
-          image.onload = () => resolve(image);
-          image.onerror = reject;
-          image.src = src;
-        })
-    );
+    if (currentFrame === 3) {
+      setFinished(true);
+      return;
+    }
 
-    Promise.all(images).then((loaded) => {
-      const canvas = document.createElement("canvas");
+    setCurrentFrame((previous) => previous + 1);
+  }
+
+  function startOver() {
+    clearInterval(timerRef.current);
+    setPhotos([null, null, null, null]);
+    setCurrentFrame(0);
+    setCountdown(null);
+    setCounting(false);
+    setFinished(false);
+    setError("");
+  }
+
+  async function downloadStrip() {
+    if (photos.some((photo) => !photo)) return;
+
+    try {
+      const images = await Promise.all(
+        photos.map(
+          (src) =>
+            new Promise((resolve, reject) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.onerror = reject;
+              img.src = src;
+            })
+        )
+      );
+
       const width = 600;
       const padding = 28;
       const photoWidth = width - padding * 2;
@@ -137,18 +173,19 @@ export default function App() {
       const gap = 16;
       const header = 130;
       const footer = 100;
+      const height =
+        header + 4 * photoHeight + 3 * gap + footer;
 
+      const canvas = document.createElement("canvas");
       canvas.width = width;
-      canvas.height =
-        header + PHOTO_COUNT * photoHeight +
-        (PHOTO_COUNT - 1) * gap + footer;
+      canvas.height = height;
 
       const ctx = canvas.getContext("2d");
-      const gradient = ctx.createLinearGradient(0, 0, width, canvas.height);
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
       gradient.addColorStop(0, "#f1edff");
       gradient.addColorStop(1, "#e6f4ff");
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, canvas.height);
+      ctx.fillRect(0, 0, width, height);
 
       ctx.fillStyle = "#75669e";
       ctx.textAlign = "center";
@@ -157,47 +194,54 @@ export default function App() {
       ctx.font = "18px sans-serif";
       ctx.fillText("little moments, lovely memories", width / 2, 94);
 
-      loaded.forEach((image, index) => {
+      images.forEach((img, index) => {
         const y = header + index * (photoHeight + gap);
-        ctx.save();
-        ctx.shadowColor = "rgba(100, 90, 140, 0.18)";
-        ctx.shadowBlur = 12;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(padding, y, photoWidth, photoHeight);
-        ctx.restore();
-
         const scale = Math.max(
-          photoWidth / image.width,
-          photoHeight / image.height
+          photoWidth / img.width,
+          photoHeight / img.height
         );
         const cropWidth = photoWidth / scale;
         const cropHeight = photoHeight / scale;
-        const sx = (image.width - cropWidth) / 2;
-        const sy = (image.height - cropHeight) / 2;
+
+        ctx.save();
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "rgba(100, 90, 140, 0.18)";
+        ctx.shadowBlur = 12;
+        ctx.fillRect(padding, y, photoWidth, photoHeight);
+        ctx.restore();
 
         ctx.save();
         ctx.beginPath();
         ctx.rect(padding, y, photoWidth, photoHeight);
         ctx.clip();
         ctx.drawImage(
-          image, sx, sy, cropWidth, cropHeight,
-          padding, y, photoWidth, photoHeight
+          img,
+          (img.width - cropWidth) / 2,
+          (img.height - cropHeight) / 2,
+          cropWidth,
+          cropHeight,
+          padding,
+          y,
+          photoWidth,
+          photoHeight
         );
         ctx.restore();
       });
 
       ctx.fillStyle = "#75669e";
       ctx.font = "20px sans-serif";
-      ctx.fillText("♡  made with WE GO-6  ♡", width / 2, canvas.height - 35);
+      ctx.fillText("♡ made with WE GO-6 ♡", width / 2, height - 35);
 
       const link = document.createElement("a");
       link.download = "wego6-photo-strip.png";
       link.href = canvas.toDataURL("image/png");
       link.click();
-    }).catch(() => {
-      setError("Sorry, the photo strip could not be created. Please try again.");
-    });
+    } catch {
+      setError("We couldn't create your strip. Please try again.");
+    }
   }
+
+  const currentPhoto = photos[currentFrame];
 
   return (
     <main className="booth">
@@ -210,11 +254,29 @@ export default function App() {
         <p>your little corner of memories</p>
       </header>
 
+      <div className="progress">
+        {POSES.map((pose, index) => (
+          <div
+            key={pose.title}
+            className={`progress-step ${
+              index === currentFrame ? "active" : ""
+            } ${photos[index] ? "complete" : ""}`}
+          >
+            <span>{photos[index] ? <Check size={16} /> : index + 1}</span>
+            <small>FRAME {index + 1}</small>
+          </div>
+        ))}
+      </div>
+
       <section className="workspace">
         <div className="camera-panel">
           <div className="section-heading">
-            <h1>Let's take four!</h1>
-            <p>Get comfy, find your pose, and smile ♡</p>
+            <h1>{finished ? "You did it! ♡" : POSES[currentFrame].title}</h1>
+            <p>
+              {finished
+                ? "Your four-cut memories are ready!"
+                : POSES[currentFrame].tip}
+            </p>
           </div>
 
           <div className="camera-frame">
@@ -225,52 +287,86 @@ export default function App() {
               muted
               playsInline
             />
+
             {!cameraReady && !error && (
               <div className="camera-overlay">
                 <Camera size={36} />
                 <p>Waking up the camera...</p>
               </div>
             )}
+
             {countdown !== null && (
               <div className="countdown">{countdown}</div>
+            )}
+
+            {currentPhoto && !counting && (
+              <div className="captured-label">
+                <Check size={16} /> Frame captured!
+              </div>
             )}
           </div>
 
           {error && <p className="error-message">{error}</p>}
 
           <div className="controls">
-            <button
-              className="primary-button"
-              onClick={startSession}
-              disabled={!cameraReady || capturing}
-            >
-              <Camera size={19} />
-              {capturing ? "Say cheese!" : "Start photo session"}
-            </button>
-            <button
-              className="secondary-button"
-              onClick={cancelSession}
-              disabled={!capturing && photos.length === 0}
-            >
+            {!finished && !currentPhoto && (
+              <button
+                className="primary-button"
+                onClick={startCountdown}
+                disabled={!cameraReady || counting}
+              >
+                <Camera size={19} />
+                {counting ? `Smile in ${countdown ?? 0}...` : "Ready? Start 5s countdown"}
+              </button>
+            )}
+
+            {!finished && currentPhoto && (
+              <>
+                <button
+                  className="secondary-button"
+                  onClick={retakeFrame}
+                  disabled={counting}
+                >
+                  <RotateCcw size={17} />
+                  Retake this frame
+                </button>
+                <button className="primary-button" onClick={goToNextFrame}>
+                  {currentFrame === 3 ? "Finish photo strip" : "Next pose"}
+                  <ArrowRight size={18} />
+                </button>
+              </>
+            )}
+
+            {finished && (
+              <button className="primary-button" onClick={downloadStrip}>
+                <Download size={18} />
+                Download photo strip
+              </button>
+            )}
+
+            <button className="secondary-button" onClick={startOver}>
               <RotateCcw size={17} />
               Start over
             </button>
           </div>
-          <p className="hint">4 photos · 3-second countdown · just for you</p>
+
+          <p className="hint">
+            One pose at a time · You control the countdown · 5 seconds to pose
+          </p>
         </div>
 
         <aside className="strip-panel">
           <div className="section-heading">
             <h2>Your photo strip</h2>
-            <p>{photos.length} of {PHOTO_COUNT} captured</p>
+            <p>{photos.filter(Boolean).length} of 4 photos captured</p>
           </div>
 
           <div className="photo-strip">
             <div className="strip-title">WE GO-6 ♡</div>
-            {Array.from({ length: PHOTO_COUNT }, (_, index) => (
+            {photos.map((photo, index) => (
               <div className="photo-slot" key={index}>
-                {photos[index] ? (
-                  <img src={photos[index]} alt={`Photo ${index + 1}`} />
+                {photo ? (
+                  <img src={photo} alt={`Photo ${index + 1}`} />
                 ) : (
                   <div className="empty-slot">
                     <Camera size={23} />
@@ -285,7 +381,7 @@ export default function App() {
           <button
             className="download-button"
             onClick={downloadStrip}
-            disabled={photos.length !== PHOTO_COUNT}
+            disabled={photos.some((photo) => !photo)}
           >
             <Download size={18} />
             Download photo strip
