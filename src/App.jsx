@@ -313,6 +313,7 @@ export default function App() {
   <small>Placeholder guide · Replace later</small>
 </div>
 
+
 <div className="camera-frame">
   <video
     ref={videoRef}
@@ -338,29 +339,24 @@ export default function App() {
     </div>
   </div>
 
-  {/* Keep your existing camera loading, countdown,
-      and captured-label code here! */}
+  {!cameraReady && !error && (
+    <div className="camera-overlay">
+      <Camera size={36} />
+      <p>Waking up the camera...</p>
+    </div>
+  )}
+
+  {countdown !== null && (
+    <div className="countdown">{countdown}</div>
+  )}
+
+  {currentPhoto && !counting && (
+    <div className="captured-label">
+      <Check size={16} /> Frame captured!
+    </div>
+  )}
 </div>
 
-
-
-            {!cameraReady && !error && (
-              <div className="camera-overlay">
-                <Camera size={36} />
-                <p>Waking up the camera...</p>
-              </div>
-            )}
-
-            {countdown !== null && (
-              <div className="countdown">{countdown}</div>
-            )}
-
-            {currentPhoto && !counting && (
-              <div className="captured-label">
-                <Check size={16} /> Frame captured!
-              </div>
-            )}
-          </div>
 
           {error && <p className="error-message">{error}</p>}
 
